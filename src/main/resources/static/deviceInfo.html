@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>生产线能耗分析</title>
+    <style>
+        #pic1{
+            width:400px;
+            height:400px;
+            margin: 20px auto;
+        }
+
+         .col-center-block {
+             float: none;
+             display: block;
+             margin-left: auto;
+             margin-right: auto;
+         }
+
+
+    </style>
+   <link href="media/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+
+	<link href="media/css/bootstrap-responsive.min.css" rel="stylesheet" type="text/css"/>
+
+	<link href="media/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
+
+	<link href="media/css/style-metro.css" rel="stylesheet" type="text/css"/>
+
+	<link href="media/css/style.css" rel="stylesheet" type="text/css"/>
+
+	<link href="media/css/style-responsive.css" rel="stylesheet" type="text/css"/>
+    <link href="media/css/calendar.css" rel="stylesheet" type="text/css"/>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<link href="media/css/uniform.default.css" rel="stylesheet" type="text/css"/>
+    <link rel="stylesheet" type="text/css" href="media/css/select2_metro.css" />
+    <link rel="stylesheet" href="media/css/DT_bootstrap.css" />
+    <link rel="shortcut icon" href="media/image/favicon.ico" />
+    <link rel="stylesheet" href="media/css/bootstrap-switch.min.css">
+    <link rel="stylesheet" href="css/datepicker.css">
+    <script src="media/js/echarts.common.min.js"></script>
+</head>
+<body ng-app="deviceInfo" ng-controller="deviceTest" ng-init="connect()">
+	<div class="container-fluid">
+		<div class="row-fluid">
+
+					<div class="span12">
+
+						<div class="portlet box yellow">
+
+							<div class="portlet-title">
+
+								<div class="caption"><i class="icon-reorder"></i>设备能耗详细</div>
+                                <div class="pull-right">能耗单位为 kwh</div>
+							</div>
+                            <div class="portlet-body">
+                                 <table class="table table-hover">
+                                 	<tr>
+                                        <th>wifi</th>
+	                                 	<th>设备名称</th>
+                                        <th>电压</th>
+	                                 	<th>电流</th>
+                                        <th>w</th>
+                                        <th>wh</th>
+	                                 	<th>开机时间</th>
+                                        <th>关机时间</th>
+                                        <th>设备状态</th>
+                                        <th>二维码下载</th>
+                                 	</tr>
+                                 	<tr>
+                                        <td>{{id}}</td>
+                                 		<th>{{name}}</th>
+                                 		<td>{{data1.voltage}}</td>
+                                 		<td>{{data1.current}}</td>
+                                        <td>{{data1.power}}</td>
+                                 		<!--<td>{{deviceInfo.runStatus?'正常运行':'停止运行'}}</td>-->
+                                 		<td>{{data1.wh}}</td>
+                                 		<td>{{dataListRuntime}}</td>
+                                 		<td>{{dataListStoptime}}</td>
+                                        <td>{{status}}</td>
+                                        <th><a  data-toggle="modal" data-target="#myModal"><i class=" icon-qrcode"></i></a></th>
+                                 	</tr>
+                                 </table>
+                            </div>
+
+						</div>
+
+                    </div>
+             <!--设备开关机记录 能耗-->
+                    <div class="portlet box blue">
+                        <div class="portlet-title">
+                            <div class="caption"><i class="icon-reorder"></i>{{name}}开关机能耗记录</div>
+                            <div class="pull-right">设备开关机能耗记录</div>
+                        </div>
+                        <div class="portlet-body">
+                            <div class="mt40">
+                                <div class="c-datepicker-date-editor J-datepicker-range mt10">
+                                    <i class="c-datepicker-range__icon kxiconfont icon-clock"></i>
+                                    <input placeholder="开始日期" name="" class="c-datepicker-data-input" value="">
+                                    <span class="c-datepicker-range-separator">-</span>
+                                    <input placeholder="结束日期" name="" class="c-datepicker-data-input" value="">
+                                </div>
+                            </div>
+                            <br/>
+                            <table class="table table-hover table-striped">
+                                <tr>
+
+                                    <th>编号</th>
+                                    <th>开机时间</th>
+                                    <th>关机时间</th>
+                                    <th>能耗值(kwh)</th>
+                                    <th>一次开关机消耗能耗(kwh)</th>
+                                </tr>
+                                <tr ng-repeat=" listBy in listByTime">
+
+                                    <td>{{listBy.sid}}</td>
+                                    <td>{{listBy.switchStatus==="1"?listBy.logTime:" "}}</td>
+                                    <td>{{listBy.switchStatus==="1"?" ":listBy.logTime}}</td>
+                                    <td>{{listBy.currentWh}}</td>
+                                    <td>{{listBy.switchStatus==="1"?" ":listBy.currentWh-listByTime[$index+1].currentWh}}</td>
+                                </tr>
+
+                            </table>
+                        </div>
+                    </div>
+             <!--动图-->
+                     <div class="portlet box red">
+                        <div class="portlet-title">
+                            <div class="caption"><i class="icon-reorder"></i>{{name}}wh图表</div>
+                            <div class="pull-right">能耗单位为 kwh</div>
+                        </div>
+                        <div class="portlet-body">
+                            <div id="main" style="width: 1200px;height:400px;"></div>
+                        </div>
+                    </div>
+
+                    
+			</div>
+
+    </div>
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+
+                    <h4 class="modal-title" id="myModalLabel">二维码下载</h4>
+                </div>
+                <div class="modal-body">
+                   <div class="qrcode"></div>
+                    <h5>{{deviceInfo.deviceTestName}}二维码</h5>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="media/js/calendar.js" ></script>
+    <script type="text/javascript" src="media/js/angular.min.js"></script>
+    <script src="media/js/angular-route.min.js"></script>
+    <script src="media/js/jquery-3.3.1.min.js"></script>
+    <script src="media/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script src="//cdn.bootcss.com/jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
+    <script src="media/js/bootstrap-switch.min.js"></script>
+    <script src="common/sockjs.min.js"></script>
+    <script src="common/stomp.min.js"></script>
+    <script src="js/plugins/moment.min.js"></script>
+    <script src="js/datepicker.all.js"></script>
+    <script type="text/javascript" src="js/echarts.common.min.js" ></script>
+<script>
+
+
+
+
+
+//获取从http://localhost:8081/deviceInfo.html?id=1&name=电脑拆解线   传递来的值
+    function getUrlParam(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+        var r = window.location.search.substr(1).match(reg);  //匹配目标参数
+
+        if (r != null)
+            return decodeURIComponent(r[2]);
+        else
+            return null; //返回参数值
+    }
+    var href= window.location.href;
+    var tr = href.match(/(\S*)&/)[1];
+    //alert(tr);
+    var hrefNew = tr+"&name="+getUrlParam("name");
+
+
+    var id = getUrlParam("id");//1
+    var name = getUrlParam("name");//电脑生产线
+    console.log(name);
+
+
+    console.log("2222");
+    var tt = tr+"&name="+utf16to8(name);
+    //alert(tt);
+    $(".qrcode").qrcode({
+        render: "table",
+        width: 200,
+        height: 200,
+        correctLevel:0,
+        text:tr+"&name="+utf16to8(name)
+
+    });
+
+     function utf16to8(str) {
+            var out, i, len, c;
+            out = "";
+            len = str.length;
+            for(i = 0; i < len; i++) {
+                c = str.charCodeAt(i);
+                if ((c >= 0x0001) && (c <= 0x007F)) {
+                    out += str.charAt(i);
+                } else if (c > 0x07FF) {
+                    out += String.fromCharCode(0xE0 | ((c >> 12) & 0x0F));
+                    out += String.fromCharCode(0x80 | ((c >>  6) & 0x3F));
+                    out += String.fromCharCode(0x80 | ((c >>  0) & 0x3F));
+                } else {
+                    out += String.fromCharCode(0xC0 | ((c >>  6) & 0x1F));
+                    out += String.fromCharCode(0x80 | ((c >>  0) & 0x3F));
+                }
+            }
+            return out;
+    }
+
+
+    var stompClient = null;
+    var app=angular.module('deviceInfo',[]);
+    app.controller('deviceTest',function($scope,$http,$rootScope) {
+        $scope.connect = function() {
+            $scope.name =name;
+            $scope.id = id;
+
+            var socket = new SockJS('/my-websocket');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function(frame) {
+                $scope.send();
+                $scope.findT10SwitchByTime();
+                stompClient.subscribe('/topic/send', function(msg) {
+                    $scope.$apply();
+                });
+
+                // 服务器传递来的数据 在 r 中
+                stompClient.subscribe('/topic/callback', function(r) {
+                    var dd = JSON.parse(r.body);
+                    $scope.data = dd;//json字符串转换为json
+                    console.log($scope.data);
+
+                    if($scope.id === "10") {
+                        $scope.data1 = $scope.data.t10;
+                    }else if($scope.id === "11"){
+                        $scope.data1 = $scope.data.t11;
+                    }else if($scope.id === "15"){
+                        $scope.data1 = $scope.data.t15;
+                    }else if($scope.id === "16"){
+                        $scope.data1 = $scope.data.t16;
+                    }else if($scope.id === "17"){
+                        $scope.data1 = $scope.data.t17;
+                    }else if($scope.id === "18"){
+                        $scope.data1 = $scope.data.t18;
+                    }else if($scope.id === "19"){
+                        $scope.data1 = $scope.data.t19;
+                    }else if($scope.id === "21"){
+                        $scope.data1 = $scope.data.t21;
+                    }else if($scope.id === "22"){
+                        $scope.data1 = $scope.data.t22;
+                    }else if($scope.id === "24"){
+                        $scope.data1 = $scope.data.t24;
+                    }else if($scope.id === "26"){
+                        $scope.data1 = $scope.data.t26;
+                    }else if($scope.id === "27"){
+                        $scope.data1 = $scope.data.t27;
+                    }else if($scope.id === "28"){
+                        $scope.data1 = $scope.data.t28;
+                    }else if($scope.id === "29"){
+                        $scope.data1 = $scope.data.t29;
+                    }else if($scope.id === "30"){
+                        $scope.data1 = $scope.data.t30;
+                    }else if($scope.id === "40"){
+                        $scope.data1 = $scope.data.t40;
+                    }else if($scope.id === "41"){
+                        $scope.data1 = $scope.data.t41;
+                    }else if($scope.id === "42"){
+                        $scope.data1 = $scope.data.t42;
+                    }else if($scope.id === "43"){
+                        $scope.data1 = $scope.data.t43;
+                    } else if($scope.id === "44"){
+                        $scope.data1 = $scope.data.t44;
+                    }
+                    $scope.dataList = $scope.data.list;
+
+                    var a ;
+                    var b ;
+
+                    for(var  i = 0 ; i< $scope.dataList.length ; i++ ){
+                        //开机时间
+                        if($scope.dataList[i].switchStatus === "1"){
+                            $scope.dataListRuntime = $scope.dataList[i].logTime;
+                            var run = $scope.dataListRuntime;
+                               a = new Date(run).getTime();
+                        }else{
+                            $scope.dataListStoptime = $scope.dataList[i].logTime;
+                            var stop = $scope.dataListStoptime;
+                            b = new Date(stop).getTime();
+                        }
+
+                    }
+
+                    if(a>b){
+                        //开机状态
+                        $scope.status = "开机";
+
+                    }else{
+                        //关机状态
+                        $scope.status = "关机";
+                    }
+
+
+                    $scope.$apply();
+                });
+                $scope.$apply();
+
+            });
+
+            $scope.send = function() {
+                //alert("链接了");
+                stompClient.send("/app/send", {}, JSON.stringify({
+                    'id': $scope.id
+                }));
+            }
+
+        };
+
+
+        //当天的开关机记录
+        $scope.findT10SwitchByTime = function() {
+            $http.get("/findT10SwitchByTime.do").success(
+                function (response) {
+                    //alert("执行了");
+                    $scope.listByTime = response;
+                    console.log($scope.listByTime);
+                }
+            );
+
+        }
+
+
+        $scope.findT10SwitchByTime100 = function() {
+            $http.get("/findT10limit100.do").success(
+                function (response) {
+                    //alert("执行了");
+                    $scope.listBy100 = response;
+                }
+            );
+
+        }
+//一次性获取五十个数据  然后各一个取出一个
+
+        //动态图标
+
+        // 基于准备好的dom，初始化echarts实例
+        var myChart = echarts.init(document.getElementById('main'));//定义折线图显示的位置对象
+        //  随机数据值
+        function randomData() {
+            console.log($scope.listBy100);
+            now = new Date(+now + oneDay);  //让当前日期加上一天，也就是每次执行这个函数的时候会+1天  这个以毫秒是创建时间
+            value = value + Math.random() * 21 - 10;  //生成一个随机的数值
+            return {
+                name: now.toString(),  ////时间转字符
+                value: [
+                    [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/'),  //生成日期的格式，例如：1998/1/2
+                    Math.round(value)  //随机的值取整
+                ]
+
+            }
+        }
+        //定义一个data  集合
+        var data = [];
+        var now = +new Date(1997, 9, 3);  //起始日期   等同于new Date(1997,9,3).getTime()  这是JS中的小技巧，转数值型。-----
+        var oneDay = 24 * 3600 * 1000;  //一天的毫秒数   4000ms 我的
+        // var oneDay = 5 * 1000;  //一天的毫秒数
+        var value = Math.random() * 1000;  //生成一个随机的数值
+
+
+
+        for (var i = 0; i < 50; i++) {  //   这里是初始化存入的值    先存入          数据库中一次性取出20个值？然后加载到这里面来
+            console.log(randomData());  //格式为{name:}
+            data.push(randomData());  //存入
+        }
+
+        //我的需要先存入
+
+
+        option = {
+            title: {
+                text: " "
+            },
+
+            tooltip: {
+                show :true,  //鼠标移动到上面显示值
+                trigger: 'axis',  //x轴触发
+
+
+                formatter: function (params) {  // 提示框内容  也就是鼠标移动到先上面现实的数据
+                    params = params[0];
+                    var date = new Date(params.name);
+                    return date.getDate() + '/' + (date.getMonth() + 1) + '/' + date.getFullYear() + ' : ' + params.value[1];
+                },
+                axisPointer: {
+                    animation: true
+                }
+            },
+
+
+            //x 轴为时间
+            xAxis: {
+                type: 'time',
+                splitLine: {
+                    show: false    //分割线显示
+                }
+            },
+            //y轴为值
+            yAxis: {
+                type: 'value',
+                boundaryGap: [0, '100%'],
+                splitLine: {
+                    show: false
+                }
+            },
+
+            series: [{
+                name: '模拟数据',
+                type: 'line',
+                color:"blue",
+                //showSymbol: false,   原本
+                showSymbol: false,  //点阵密集
+                hoverAnimation: true,
+                data: data  //显示数据
+            }]
+        };
+
+
+        //每秒刷新一次
+        setInterval(function () {
+
+            for (var i = 0; i < 5; i++) {
+                data.shift(); //把数组的第一个元素从其中删除，并返回第一个元素的值。
+                data.push(randomData());  //就是实现 将最左侧的去除   然后右侧新增值
+            }
+            myChart.setOption(option);
+        }, 4000);
+
+
+
+
+    });
+
+// 时间短选择
+     $(function(){
+         var DATAPICKERAPI = {
+             // 默认input显示当前月,自己获取后填充
+             activeMonthRange: function () {
+                 return {
+                     begin: moment().set({ 'date': 1, 'hour': 0, 'minute': 0, 'second': 0 }).format('YYYY-MM-DD HH:mm:ss'),
+                     end: moment().set({ 'hour': 23, 'minute': 59, 'second': 59 }).format('YYYY-MM-DD HH:mm:ss')
+                 }
+             },
+             shortcutMonth: function () {
+                 // 当月
+                 var nowDay = moment().get('date');
+                 var prevMonthFirstDay = moment().subtract(1, 'months').set({ 'date': 1 });
+                 var prevMonthDay = moment().diff(prevMonthFirstDay, 'days');
+                 return {
+                     now: '-' + nowDay + ',0',
+                     prev: '-' + prevMonthDay + ',-' + nowDay
+                 }
+             },
+             // 注意为函数：快捷选项option:只能同一个月份内的
+             rangeMonthShortcutOption1: function () {
+                 var result = DATAPICKERAPI.shortcutMonth();
+                 return [{
+                     name: '昨天',
+                     day: '-1,-1',
+                     time: '00:00:00,23:59:59'
+                 }, {
+                     name: '这一月',
+                     day: result.now,
+                     time: '00:00:00,'
+                 }, {
+                     name: '上一月',
+                     day: result.prev,
+                     time: '00:00:00,23:59:59'
+                 }];
+             },
+             // 快捷选项option
+             rangeShortcutOption1: [{
+                 name: '最近一周',
+                 day: '-7,0'
+             }, {
+                 name: '最近一个月',
+                 day: '-30,0'
+             }, {
+                 name: '最近三个月',
+                 day: '-90, 0'
+             }],
+             singleShortcutOptions1: [{
+                 name: '今天',
+                 day: '0'
+             }, {
+                 name: '昨天',
+                 day: '-1',
+                 time: '00:00:00'
+             }, {
+                 name: '一周前',
+                 day: '-7'
+             }]
+         };
+         //十分秒年月日范围，包含最大最小值
+         $('.J-datepicker-range').datePicker({
+             hasShortcut: true,
+             min: '2018-01-01 06:00:00',
+             max: '2019-04-29 20:59:59',
+             isRange: true,
+             shortcutOptions: [{
+                 name: '昨天',
+                 day: '-1,-1',
+                 time: '00:00:00,23:59:59'
+             },{
+                 name: '最近一周',
+                 day: '-7,0',
+                 time:'00:00:00,'
+             }, {
+                 name: '最近一个月',
+                 day: '-30,0',
+                 time: '00:00:00,'
+             }, {
+                 name: '最近三个月',
+                 day: '-90, 0',
+                 time: '00:00:00,'
+             }]
+         });
+
+
+
+
+
+
+     })
+
+</script>
+</body>
+</html>

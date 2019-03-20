@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="no-js">
+<head>
+现在需要点击某个页面然后传递信息到后台
+    <meta charset="utf-8" />
+    <title>spring boot——websocket测试</title>
+    <script src="common/angular.min.js"></script>
+    <script src="common/sockjs.min.js"></script>
+    <script src="common/stomp.min.js"></script>
+    <script type="text/javascript">
+        var stompClient = null;
+        var app = angular.module('app', []);
+        app.controller('MainController', function($rootScope, $scope, $http) {
+
+            $scope.connect = function() {
+                var socket = new SockJS('/my-websocket');
+                stompClient = Stomp.over(socket);
+                stompClient.connect({}, function(frame) {
+
+                    stompClient.subscribe('/topic/send', function(msg) {
+                        $scope.$apply();
+                    });
+
+                    // 服务器传递来的数据 在 r 中
+                    stompClient.subscribe('/topic/callback', function(r) {
+                        console.log(r);
+                        $scope.data1 = '测试数据：' + r.body;
+                        $scope.$apply();
+                    });
+                    $scope.$apply();
+
+                });
+
+                $scope.send = function() {
+                    stompClient.send("/app/send", {}, JSON.stringify({
+                        'id': "12"
+                    }));
+                }
+
+            };
+
+
+
+
+
+        });
+
+    </script>
+</head>
+<body ng-app="app" ng-controller="MainController" ng-init="connect()">
+
+<h2>websocket测试</h2>
+<br />
+<button ng-click="send()" type="button">发送</button>
+<div>
+    <label>{{data1}}</label> <br /> <br />
+
+
+
+</div>
+</body>
+</html>
